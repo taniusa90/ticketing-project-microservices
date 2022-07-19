@@ -1,10 +1,8 @@
 spring:
   application:
-    name: ticketing-project-rest
+    name: task-service
   profiles:
     active: default
-#    initialization-mode: always
-    data: classpath:init01.sql
   jpa:
     properties:
       hibernate:
