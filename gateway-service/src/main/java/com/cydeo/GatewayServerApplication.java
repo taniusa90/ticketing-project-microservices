@@ -1,16 +1,31 @@
 package com.cydeo;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.servers.Server;
+import org.springdoc.core.GroupedOpenApi;
+import org.springdoc.core.SwaggerUiConfigParameters;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.gateway.route.RouteDefinition;
+import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
+import org.springframework.context.annotation.Bean;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@OpenAPIDefinition(servers = {
+        @Server(url = "/user-service")
+}, info =
+@Info(title = "Ticketing App", version = "1.0", description = "User Service API"))
 public class GatewayServerApplication {
 
     public static void main(String[] args) {
 
-        SpringApplication.run(GatewayServerApplication.class,args);
+        SpringApplication.run(GatewayServerApplication.class, args);
     }
 
     //    @Bean
@@ -33,4 +48,20 @@ public class GatewayServerApplication {
 //                        .uri("lb://task-service"))
 //                .build();
 //    }
+
+    @Bean
+    public List<GroupedOpenApi> apiList(SwaggerUiConfigParameters swaggerUiConfigParameters,
+                                        RouteDefinitionLocator routeDefinitionLocator) {
+        List<GroupedOpenApi> groupedOpenApis = new ArrayList<>();
+        List<RouteDefinition> definitions = routeDefinitionLocator
+                .getRouteDefinitions().collectList().block();
+
+        definitions.stream().filter(routeDefinition -> routeDefinition.getId().matches(".*-service")
+        ).forEach(routeDefinition -> {
+            String name = routeDefinition.getId().replaceAll("-service", "");
+            swaggerUiConfigParameters.addGroup(name);
+            GroupedOpenApi.builder().pathsToMatch("/" + name + "/**").group(name).build();
+        });
+        return groupedOpenApis;
+    }
 }
